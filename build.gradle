@@ -6,12 +6,15 @@ plugins {
     id "com.diffplug.spotless" version "8.6.0"
 }
 
+group = "org.saxonrobotics"
+version = "3.0.0"
+
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-def ROBOT_MAIN_CLASS = "first.Main"
+def ROBOT_MAIN_CLASS = ""
 
 // Define my targets (SystemCore) and artifacts (deployable files)
 // This is added by GradleRIO's backing project DeployUtils.
@@ -129,17 +132,6 @@ wpi.java.configureTestTasks(test)
 // Configure string concat to always inline compile
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs.add '-XDstringConcat=inline'
-}
-
-// Create version file
-project.compileJava.dependsOn(createVersionFile)
-gversion {
-    srcDir       = "src/main/java/"
-    classPackage = "first.robot"
-    className    = "BuildConstants"
-    dateFormat   = "yyyy-MM-dd HH:mm:ss z"
-    timeZone     = "America/New_York"
-    indent       = "  "
 }
 
 // Create commit with working changes on event branches

@@ -1,0 +1,17 @@
+package org.saxonrobotics.saxonutil.lib.io.sensors.encoder;
+
+import static org.wpilib.units.Units.Rotations;
+
+import org.littletonrobotics.junction.AutoLog;
+import org.wpilib.units.measure.Angle;
+
+@FunctionalInterface
+public interface EncoderIO {
+  @AutoLog
+  class EncoderIOInputs {
+    public boolean connected = false;
+    public Angle absolutePosition = Rotations.zero();
+  }
+
+  void updateInputs(EncoderIOInputs inputs);
+}
