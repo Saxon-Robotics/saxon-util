@@ -62,7 +62,9 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
       MotorAlignmentValue[] followerAlignments,
       PositionRequest[] positionRequests,
       ControlRequest[] customRequests,
-      EncoderIOCANcoder encoder) {
+      EncoderIOCANcoder encoder,
+      double primarySignalUpdateFreq,
+      double secondarySignalUpdateFreq) {
     // Instantiate motors
     leader = new TalonFX(id, canbus);
     followers = new TalonFX[followerIds.length];
@@ -85,9 +87,10 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
       followerTemps[i] = followers[i].getDeviceTemp();
     }
     // Register status signals
-    velocity.setUpdateFrequency(100.0);
-    BaseStatusSignal.setUpdateFrequencyForAll(50.0, voltage, statorCurrent, temp);
-    BaseStatusSignal.setUpdateFrequencyForAll(50.0, followerTemps);
+    BaseStatusSignal.setUpdateFrequencyForAll(primarySignalUpdateFreq, position, velocity);
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        secondarySignalUpdateFreq, voltage, statorCurrent, temp);
+    BaseStatusSignal.setUpdateFrequencyForAll(secondarySignalUpdateFreq, followerTemps);
     leader.optimizeBusUtilization();
     ParentDevice.optimizeBusUtilizationForAll(followers);
     PhoenixUtil.registerSignals(canbus, velocity, voltage, statorCurrent, temp);
@@ -142,7 +145,9 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
         followerAlignments,
         new PositionRequest[0],
         new ControlRequest[0],
-        null);
+        null,
+        100.0,
+        50.0);
   }
 
   /**
@@ -338,6 +343,8 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
     private final ArrayList<PositionRequest> positionRequests = new ArrayList<>();
     private final ArrayList<ControlRequest> customRequests = new ArrayList<>();
     private EncoderIOCANcoder encoder;
+    private double primarySignalUpdateFreq = 100.0;
+    private double secondarySignalUpdateFreq = 50.0;
 
     public Builder(CANBus canbus, int id, TalonFXConfiguration config) {
       this.canbus = canbus;
@@ -381,6 +388,12 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
       return this;
     }
 
+    public Builder setSignalUpdateFrequency(double primarySignalHz, double secondarySignalHz) {
+      this.primarySignalUpdateFreq = primarySignalHz;
+      this.secondarySignalUpdateFreq = secondarySignalHz;
+      return this;
+    }
+
     public MotorIOTalonFX build() {
       int[] followerIds = new int[followers.size()];
       MotorAlignmentValue[] followerAlignments = new MotorAlignmentValue[followers.size()];
@@ -396,7 +409,9 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
           followerAlignments,
           positionRequests.toArray(new PositionRequest[0]),
           customRequests.toArray(new ControlRequest[0]),
-          encoder);
+          encoder,
+          primarySignalUpdateFreq,
+          secondarySignalUpdateFreq);
     }
   }
 }

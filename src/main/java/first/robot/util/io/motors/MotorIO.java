@@ -1,7 +1,7 @@
 package first.robot.util.io.motors;
 
 public interface MotorIO {
-  String VERSION = "2.1.4";
+  String VERSION = "2.1.5";
 
   abstract class MotorIOInputs {
     public boolean connected;
