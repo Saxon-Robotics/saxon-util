@@ -89,7 +89,7 @@ public abstract class Motor<T extends MotorIO, U extends MotorIO.MotorIOInputs> 
   public Angle getAbsolutePosition(boolean refresh) {
     if (refresh) {
       encoderIO.updateInputs(encoderInputs);
-      Logger.processInputs(name, encoderInputs);
+      Logger.processInputs(name + "/Encoder", encoderInputs);
     }
     return encoderInputs.absolutePosition;
   }
