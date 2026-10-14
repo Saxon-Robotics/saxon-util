@@ -166,34 +166,6 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
     this(canbus, id, config, new int[0], new MotorAlignmentValue[0]);
   }
 
-  /**
-   * Set a custom {@link PositionVoltage} request to use as the position control request.
-   *
-   * @param request Control request to use
-   * @return The modified {@link MotorIOTalonFX} object for method chaining
-   * @deprecated Use {@link MotorIOTalonFX.Builder#addControlRequest(PositionVoltage)} instead.
-   */
-  @Deprecated(forRemoval = true)
-  public MotorIOTalonFX withControlRequest(PositionVoltage request) {
-    positionRequests =
-        new PositionRequest[] {(leader, angle) -> leader.setControl(request.withPosition(angle))};
-    return this;
-  }
-
-  /**
-   * Set a custom {@link MotionMagicVoltage} request to use as the position control request.
-   *
-   * @param request Control request to use
-   * @return The modified {@link MotorIOTalonFX} object for method chaining
-   * @deprecated Use {@link MotorIOTalonFX.Builder#addControlRequest(MotionMagicVoltage)} instead.
-   */
-  @Deprecated(forRemoval = true)
-  public MotorIOTalonFX withControlRequest(MotionMagicVoltage request) {
-    positionRequests =
-        new PositionRequest[] {(leader, angle) -> leader.setControl(request.withPosition(angle))};
-    return this;
-  }
-
   @Override
   public void configure(boolean positionControl, boolean velocityControl) {
     if (positionControl) {
