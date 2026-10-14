@@ -13,12 +13,14 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.saxonrobotics.saxonutil.dependencies.PhoenixUtil;
 import org.saxonrobotics.saxonutil.lib.io.motors.elevator.LinearSystemIO;
 import org.saxonrobotics.saxonutil.lib.io.motors.pivot.PivotIO;
 import org.saxonrobotics.saxonutil.lib.io.motors.roller.RollerIO;
 import org.saxonrobotics.saxonutil.lib.io.sensors.encoder.EncoderIOCANcoder;
+import org.wpilib.math.util.Pair;
 import org.wpilib.system.Notifier;
 import org.wpilib.units.measure.*;
 
@@ -334,14 +336,12 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
   }
 
   public static class Builder {
-    private record FollowerMotor(int id, MotorAlignmentValue alignment) {}
-
     private final CANBus canbus;
     private final int id;
     private final TalonFXConfiguration config;
-    private final ArrayList<FollowerMotor> followers = new ArrayList<>();
-    private final ArrayList<PositionRequest> positionRequests = new ArrayList<>();
-    private final ArrayList<ControlRequest> customRequests = new ArrayList<>();
+    private final List<Pair<Integer, MotorAlignmentValue>> followers = new ArrayList<>();
+    private final List<PositionRequest> positionRequests = new ArrayList<>();
+    private final List<ControlRequest> customRequests = new ArrayList<>();
     private EncoderIOCANcoder encoder;
     private double primarySignalUpdateFreq = 100.0;
     private double secondarySignalUpdateFreq = 50.0;
@@ -353,7 +353,7 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
     }
 
     public Builder addFollower(int id, MotorAlignmentValue alignment) {
-      followers.add(new FollowerMotor(id, alignment));
+      followers.add(Pair.of(id, alignment));
       return this;
     }
 
@@ -398,8 +398,8 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
       int[] followerIds = new int[followers.size()];
       MotorAlignmentValue[] followerAlignments = new MotorAlignmentValue[followers.size()];
       for (int i = 0; i < followers.size(); i++) {
-        followerIds[i] = followers.get(i).id;
-        followerAlignments[i] = followers.get(i).alignment;
+        followerIds[i] = followers.get(i).getFirst();
+        followerAlignments[i] = followers.get(i).getSecond();
       }
       return new MotorIOTalonFX(
           canbus,
