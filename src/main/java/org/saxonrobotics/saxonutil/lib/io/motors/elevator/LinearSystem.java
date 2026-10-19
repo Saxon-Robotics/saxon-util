@@ -129,10 +129,10 @@ public class LinearSystem extends Motor<LinearSystemIO, LinearSystemIOInputsAuto
     public Builder setDrumRadius(double drumRadiusMeters) {
       // don't override if manually set
       if (distanceToAngle == null) {
-        distanceToAngle = distance -> Radians.of(distance.in(Meters) / drumRadiusMeters);
+        distanceToAngle = distance -> Radians.of(distance.in(Meters) / drumRadiusMeters / numStages);
       }
       if (angleToDistance == null) {
-        angleToDistance = angle -> Meters.of(angle.in(Radians) * drumRadiusMeters);
+        angleToDistance = angle -> Meters.of(numStages * angle.in(Radians) * drumRadiusMeters);
       }
       return this;
     }
