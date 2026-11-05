@@ -325,6 +325,13 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
       this.config = config;
     }
 
+    /**
+     * Add a follower motor that matches the output of the leader motor.
+     *
+     * @param id The CAN ID of the follower motor.
+     * @param alignment Choose whether the follower motor's direction is the same or the opposite of
+     *     the leader motor.
+     */
     public Builder addFollower(int id, MotorAlignmentValue alignment) {
       followers.add(Pair.of(id, alignment));
       return this;
@@ -349,24 +356,41 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
      * This method is designed to allow using other compatible ControlRequest types from the Phoenix
      * 6 API with this motor that are not explicitly offered in the other {@link
      * Builder#addControlRequest} methods. This method may also be used to add user-defined
-     * callbacks that require the raw motor object.
+     * callbacks that require the raw motor object. The slot numbers of control requests are
+     * zero-indexed in the order they are added.
      */
     public Builder addControlRequest(ControlRequest request) {
       customRequests.add(request);
       return this;
     }
 
+    /**
+     * Configure this motor to use a CANCoder as its feedback source. If the motor was already
+     * configured to use the encoder, this method is not necessary.
+     */
     public Builder addCANCoder(EncoderIOCANcoder encoder) {
       this.encoder = encoder;
       return this;
     }
 
+    /**
+     * Manually set the update frequency of the status signals.
+     *
+     * @param primaryFreqHz Frequency (in hertz) to set the primary signals used in closed loop
+     *     control (position, velocity)
+     * @param secondaryFreqHz Frequency (in hertz) to set the secondary signals used for logging
+     *     motor status (voltage, current, temp)
+     */
     public Builder setSignalUpdateFrequency(double primaryFreqHz, double secondaryFreqHz) {
       this.primarySignalUpdateFreq = primaryFreqHz;
       this.secondarySignalUpdateFreq = secondaryFreqHz;
       return this;
     }
 
+    /**
+     * Manually set the update frequency of the optimized status signals. These are signals that are
+     * not being explicitly logged in AdvantageKit, but can be viewed in the hoot logs.
+     */
     public Builder setOptimizedSignalFrequency(double optimizedFreqHz) {
       this.optimizedSignalUpdateFreq = optimizedFreqHz;
       return this;

@@ -31,7 +31,11 @@ public class LinearSystem extends Motor<LinearSystemIO, LinearSystemIOInputsAuto
     io.configure(true, true);
     this.distanceToAngle = distanceToAngle;
     this.angleToDistance = angleToDistance;
-    this.visualizedComponents = new Pose3d[numStages];
+    if (numStages <= 0) {
+      this.visualizedComponents = null;
+    } else {
+      this.visualizedComponents = new Pose3d[numStages];
+    }
   }
 
   /** {@inheritDoc} */
@@ -40,7 +44,7 @@ public class LinearSystem extends Motor<LinearSystemIO, LinearSystemIOInputsAuto
     Logger.processInputs(name, inputs);
     super.periodic();
 
-    if (visualizedComponents.length > 0) {
+    if (visualizedComponents != null) {
       double carriagePosition = angleToDistance.apply(getPosition()).in(Meters);
       for (int i = 0; i < visualizedComponents.length - 1; i++) {
         double stageHeight = carriagePosition * (i + 1) / visualizedComponents.length;
@@ -109,27 +113,46 @@ public class LinearSystem extends Motor<LinearSystemIO, LinearSystemIOInputsAuto
     private BooleanSupplier brakeMode = () -> true;
     private Function<Distance, Angle> distanceToAngle;
     private Function<Angle, Distance> angleToDistance;
-    private int numStages = 0;
+    private int numStages = 1;
+    private boolean visualized = false;
 
+    /** Create a builder that constructs a {@link LinearSystem}. */
     public Builder(String name, LinearSystemIO io) {
       this.name = name;
       this.io = io;
     }
 
+    /** Optionally add an external encoder to use with this elevator. */
     public Builder addEncoder(EncoderIO encoderIO) {
       this.encoderIO = encoderIO;
       return this;
     }
 
+    /** Set a custom supplier to determine the neutral output of the motor. */
     public Builder setBrakeMode(BooleanSupplier brakeMode) {
       this.brakeMode = brakeMode;
       return this;
     }
 
+    /**
+     * Set the number of stages in this elevator. This is important for visualization and correctly
+     * converting between rotational and linear motion.
+     */
+    public Builder setNumStages(int numStages) {
+      this.numStages = numStages;
+      return this;
+    }
+
+    /**
+     * Set the drum radius of this elevator. This is typically the radius of the sprocket, and is
+     * used to convert between rotational and linear motion. In order for the resulting functions to
+     * be accurate, the number of stages must be set using {@link setNumStages(int)}.
+     */
     public Builder setDrumRadius(double drumRadiusMeters) {
       // don't override if manually set
       if (distanceToAngle == null) {
-        distanceToAngle = distance -> Radians.of(distance.in(Meters) / drumRadiusMeters / numStages);
+        distanceToAngle =
+            distance -> Radians.of(distance.in(Meters) / drumRadiusMeters / numStages);
       }
       if (angleToDistance == null) {
         angleToDistance = angle -> Meters.of(numStages * angle.in(Radians) * drumRadiusMeters);
@@ -137,6 +160,7 @@ public class LinearSystem extends Motor<LinearSystemIO, LinearSystemIOInputsAuto
       return this;
     }
 
+    /** Use custom user-provided functions to convert between rotational and linear motion. */
     public Builder useCustomPositionFunctions(
         Function<Distance, Angle> distanceToAngle, Function<Angle, Distance> angleToDistance) {
       this.distanceToAngle = distanceToAngle;
@@ -145,26 +169,26 @@ public class LinearSystem extends Motor<LinearSystemIO, LinearSystemIOInputsAuto
     }
 
     /**
-     * Set up visualization for this mechanism.
-     *
-     * @param numStages Number of stages in the elevator. If this is set to 0, visualization will be
-     *     disabled.
-     * @return The modified {@link Builder} object for method chaining.
+     * Automatically set up visualization for this mechanism. The number of stages and drum radius
+     * must be set in order for this method to work.
      */
-    public Builder enableVisualization(int numStages) {
-      this.numStages = numStages;
-      return this;
-    }
-
-    public LinearSystem build() {
-      // we don't trust the user lol
-      if (numStages <= 0) {
-        numStages = 0;
-      } else if (angleToDistance == null) {
+    public Builder enableVisualization() {
+      if (angleToDistance == null) {
         throw new IllegalStateException(
             "Drum radius or custom position functions must be set in the builder in order to visualize the mechanism!");
       }
+      visualized = true;
+      return this;
+    }
 
+    /**
+     * Construct a {@link LinearSystem} object using the parameters given to the builder. This is
+     * the final method call in the builder chain.
+     */
+    public LinearSystem build() {
+      if (!visualized) {
+        numStages = 0;
+      }
       return new LinearSystem(
           name, io, encoderIO, brakeMode, distanceToAngle, angleToDistance, numStages);
     }
