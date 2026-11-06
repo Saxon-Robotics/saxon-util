@@ -98,6 +98,10 @@ public abstract class Motor<T extends MotorIO, U extends MotorIO.MotorIOInputs> 
     return encoderInputs.absolutePosition;
   }
 
+  public boolean isEncoderConnected() {
+    return encoderInputs.connected;
+  }
+
   public boolean isConnected() {
     return inputs.connected;
   }
