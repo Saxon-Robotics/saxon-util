@@ -10,12 +10,17 @@ import org.saxonrobotics.saxonutil.lib.io.motors.MotorIO;
 import org.saxonrobotics.saxonutil.lib.io.motors.elevator.LinearSystem;
 import org.saxonrobotics.saxonutil.lib.io.sensors.encoder.EncoderIO;
 import org.saxonrobotics.saxonutil.lib.subsystems.SubsystemManager;
-import org.wpilib.math.geometry.Transform3d;
+import org.wpilib.math.geometry.Pose3d;
+import org.wpilib.math.geometry.Rotation2d;
+import org.wpilib.math.geometry.Rotation3d;
+import org.wpilib.math.geometry.Translation3d;
 import org.wpilib.units.measure.Angle;
 import org.wpilib.units.measure.AngularVelocity;
 
 public class Pivot extends Motor<PivotIO, PivotIOInputsAutoLogged> {
-  private Transform3d pivotOffset;
+  private Translation3d pivotOffset;
+  private Rotation2d pivotRotation;
+  private double intialRotation;
 
   public Pivot(String name, PivotIO io, EncoderIO encoderIO, BooleanSupplier brakeMode) {
     super(name, io, new PivotIOInputsAutoLogged(), encoderIO, brakeMode);
@@ -36,8 +41,10 @@ public class Pivot extends Motor<PivotIO, PivotIOInputsAutoLogged> {
    * @param offset Pivot offset. If this is set to null, visualization will be disabled.
    * @return The modified {@link LinearSystem.Builder} object for method chaining.
    */
-  public Pivot enableVisualization(Transform3d offset) {
+  public Pivot enableVisualization(Translation3d offset, double rotation, double initial) {
     this.pivotOffset = offset;
+    this.pivotRotation = new Rotation2d(rotation);
+    this.intialRotation = initial;
     return this;
   }
 
@@ -49,7 +56,8 @@ public class Pivot extends Motor<PivotIO, PivotIOInputsAutoLogged> {
     super.periodic();
 
     if (pivotOffset != null) {
-      // todo
+      Logger.recordOutput(name + "/RobotComponents", new Pose3d(
+          pivotOffset, new Rotation3d(0.0, inputs.positionDeg + intialRotation, pivotRotation.getRadians())));
     }
   }
 
