@@ -7,20 +7,16 @@ import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.Logger;
 import org.saxonrobotics.saxonutil.lib.io.motors.Motor;
 import org.saxonrobotics.saxonutil.lib.io.motors.MotorIO;
-import org.saxonrobotics.saxonutil.lib.io.motors.elevator.LinearSystem;
 import org.saxonrobotics.saxonutil.lib.io.sensors.encoder.EncoderIO;
 import org.saxonrobotics.saxonutil.lib.subsystems.SubsystemManager;
 import org.wpilib.math.geometry.Pose3d;
-import org.wpilib.math.geometry.Rotation2d;
 import org.wpilib.math.geometry.Rotation3d;
-import org.wpilib.math.geometry.Translation3d;
+import org.wpilib.math.geometry.Transform3d;
 import org.wpilib.units.measure.Angle;
 import org.wpilib.units.measure.AngularVelocity;
 
 public class Pivot extends Motor<PivotIO, PivotIOInputsAutoLogged> {
-  private Translation3d pivotOffset;
-  private Rotation2d pivotRotation;
-  private double intialRotation;
+  private Transform3d pivotOffset;
 
   public Pivot(String name, PivotIO io, EncoderIO encoderIO, BooleanSupplier brakeMode) {
     super(name, io, new PivotIOInputsAutoLogged(), encoderIO, brakeMode);
@@ -38,13 +34,13 @@ public class Pivot extends Motor<PivotIO, PivotIOInputsAutoLogged> {
   /**
    * Set up visualization for this mechanism.
    *
-   * @param offset Pivot offset. If this is set to null, visualization will be disabled.
-   * @return The modified {@link LinearSystem.Builder} object for method chaining.
+   * @param offset Pivot offset. The pivot will move rotationally in the pitch (Y) axis. This can be
+   *     changed by adding a yaw or roll transform. If this is set to null, visualization will be
+   *     disabled.
+   * @return The modified {@link Pivot} object for method chaining.
    */
-  public Pivot enableVisualization(Translation3d offset, double rotation, double initial) {
+  public Pivot enableVisualization(Transform3d offset) {
     this.pivotOffset = offset;
-    this.pivotRotation = new Rotation2d(rotation);
-    this.intialRotation = initial;
     return this;
   }
 
@@ -56,8 +52,13 @@ public class Pivot extends Motor<PivotIO, PivotIOInputsAutoLogged> {
     super.periodic();
 
     if (pivotOffset != null) {
-      Logger.recordOutput(name + "/RobotComponents", new Pose3d(
-          pivotOffset, new Rotation3d(0.0, inputs.positionDeg + intialRotation, pivotRotation.getRadians())));
+      Logger.recordOutput(
+          name + "/RobotComponents",
+          new Pose3d(
+              pivotOffset.getTranslation(),
+              pivotOffset
+                  .getRotation()
+                  .rotateBy(new Rotation3d(0, Math.toRadians(getPositionDeg()), 0))));
     }
   }
 
