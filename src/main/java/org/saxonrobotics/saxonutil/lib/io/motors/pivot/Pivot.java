@@ -4,6 +4,7 @@ import static org.wpilib.units.Units.Degrees;
 import static org.wpilib.units.Units.DegreesPerSecond;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 import org.saxonrobotics.saxonutil.lib.io.motors.Motor;
 import org.saxonrobotics.saxonutil.lib.io.motors.MotorIO;
@@ -12,11 +13,13 @@ import org.saxonrobotics.saxonutil.lib.subsystems.SubsystemManager;
 import org.wpilib.math.geometry.Pose3d;
 import org.wpilib.math.geometry.Rotation3d;
 import org.wpilib.math.geometry.Transform3d;
+import org.wpilib.math.geometry.Translation3d;
 import org.wpilib.units.measure.Angle;
 import org.wpilib.units.measure.AngularVelocity;
 
 public class Pivot extends Motor<PivotIO, PivotIOInputsAutoLogged> {
-  private Transform3d pivotOffset;
+  private Supplier<Translation3d> translationOffset;
+  private Supplier<Rotation3d> rotationOffset;
 
   public Pivot(String name, PivotIO io, EncoderIO encoderIO, BooleanSupplier brakeMode) {
     super(name, io, new PivotIOInputsAutoLogged(), encoderIO, brakeMode);
@@ -40,7 +43,30 @@ public class Pivot extends Motor<PivotIO, PivotIOInputsAutoLogged> {
    * @return The modified {@link Pivot} object for method chaining.
    */
   public Pivot enableVisualization(Transform3d offset) {
-    this.pivotOffset = offset;
+    if (offset == null) return this;
+    this.translationOffset = offset::getTranslation;
+    this.rotationOffset = offset::getRotation;
+    return this;
+  }
+
+  /**
+   * Set up visualization for this mechanism with dynamic offsets.
+   *
+   * @param translation Pivot translational offset. If this is set to null, visualization will be
+   *     disabled.
+   * @param rotation Pivot rotational offset. The pivot will move in the pitch (Y) axis. This can be
+   *     changed by adding a yaw or roll transform. If this is set to null, rotation offset will be
+   *     assumed to be zero.
+   * @return The modified {@link Pivot} object for method chaining.
+   */
+  public Pivot enableVisualization(
+      Supplier<Translation3d> translation, Supplier<Rotation3d> rotation) {
+    if (translation == null) return this;
+    if (rotation == null) {
+      rotation = () -> Rotation3d.kZero;
+    }
+    this.translationOffset = translation;
+    this.rotationOffset = rotation;
     return this;
   }
 
@@ -51,13 +77,13 @@ public class Pivot extends Motor<PivotIO, PivotIOInputsAutoLogged> {
     Logger.processInputs(name, inputs);
     super.periodic();
 
-    if (pivotOffset != null) {
+    if (translationOffset != null) {
       Logger.recordOutput(
           name + "/RobotComponents",
           new Pose3d(
-              pivotOffset.getTranslation(),
-              pivotOffset
-                  .getRotation()
+              translationOffset.get(),
+              rotationOffset
+                  .get()
                   .rotateBy(new Rotation3d(0, Math.toRadians(getPositionDeg()), 0))));
     }
   }
