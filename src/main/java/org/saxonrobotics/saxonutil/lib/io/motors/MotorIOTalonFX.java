@@ -15,6 +15,7 @@ import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.saxonrobotics.saxonutil.dependencies.PhoenixUtil;
 import org.saxonrobotics.saxonutil.lib.io.motors.elevator.LinearSystemIO;
 import org.saxonrobotics.saxonutil.lib.io.motors.pivot.PivotIO;
@@ -236,9 +237,17 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
    * API with this motor that are not explicitly offered in the {@link Builder} methods. This method
    * may also be used to call user-defined callbacks that require the raw motor object.
    */
+  @Override
   public void setOutput(int slot, double output) {
     if (slot < 0 || slot >= customRequests.length) return;
     customRequests[slot].apply(leader, output);
+  }
+
+  /** This method may be used to call user-defined callbacks that require the raw motor object. */
+  @Override
+  public void runCallback(int slot) {
+    if (slot < 0 || slot >= customRequests.length) return;
+    customRequests[slot].apply(leader, 0);
   }
 
   @Override
@@ -355,12 +364,21 @@ public class MotorIOTalonFX implements AutoCloseable, RollerIO, PivotIO, LinearS
     /**
      * This method is designed to allow using other compatible ControlRequest types from the Phoenix
      * 6 API with this motor that are not explicitly offered in the other {@link
-     * Builder#addControlRequest} methods. This method may also be used to add user-defined
-     * callbacks that require the raw motor object. The slot numbers of control requests are
-     * zero-indexed in the order they are added.
+     * Builder#addControlRequest} methods. The slot numbers of custom control requests and callbacks
+     * are zero-indexed in the order they are added.
      */
     public Builder addControlRequest(ControlRequest request) {
       customRequests.add(request);
+      return this;
+    }
+
+    /**
+     * This method may be used to add user-defined callbacks that require the raw motor object. The
+     * slot numbers of custom control requests and callbacks are zero-indexed in the order they are
+     * added.
+     */
+    public Builder addCallback(Consumer<TalonFX> callback) {
+      customRequests.add((leader, output) -> callback.accept(leader));
       return this;
     }
 
